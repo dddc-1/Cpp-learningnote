@@ -133,8 +133,10 @@ c++风格字符串:``string 变量名 = "字符串值"``
    2. 野指针：指针变量指向非法的内存空间
 
 3. 常量指针和指针常量
-   1. 常量指针：![alt text](image-12.png)
-   2. 指针常量： ![alt text](image-13.png)
+   1. 常量指针
+   ![alt text](image-12.png)
+   2. 指针常量
+   ![alt text](image-13.png)
 
 # 七 结构体
 
@@ -142,9 +144,10 @@ c++风格字符串:``string 变量名 = "字符串值"``
 
 2. 结构体的定义和使用：
    1. 语法：``struct 结构体名 {结构体成员列表};``
-   2. ![alt text](image-14.png)
+   2. 
+   ![alt text](image-14.png)
 
-        ![alt text](image-15.png)
+    ![alt text](image-15.png)
 
 3. 结构体数组
    1. 作用：将自定义的结构体放入到数组中方便维护
@@ -357,3 +360,436 @@ int main() {
 2. 函数名称与类名相同，在名称前加上符号~
 3. 析构函数不可以有参数，因此不可以发生重载
 4. 程序在调用对象的时候会自动调用析构，无需手动调用，而且只会调用一次
+
+### 4.2.2 构造函数的分类及调用
+两种分类方式：
+- 按参数分为：有参构造和无参构造
+- 按类型分为：普通构造和拷贝构造
+
+三种调用方式：
+- 括号法
+- 显示法
+- 隐式转换法
+
+```
+#include<iostream>;
+using namespace std;
+
+//分类
+//按照参数分类  无参构造（默认构造）和有参构造
+//按照类型分类  普通构造   拷贝构造
+class Person
+{
+public:
+	//构造函数
+	Person()
+	{
+		cout << "person 的无参构造函数调用" << endl;
+	}
+	Person(int a)
+	{
+		age = a;
+		cout << "person 的有参构造函数调用" << endl;
+	}
+	//拷贝构造函数
+	Person(const Person &p)
+	{
+		//将传入人身上的属性，拷贝到当前对象身上
+		age = p.age;
+		cout << "person 的拷贝构造函数调用" << endl;
+	}
+
+
+	//析构函数
+	~Person()
+	{
+		cout << "person 的析构函数调用" << endl;
+	}
+
+	int age;
+};
+
+void test()
+{
+	//1.括号法
+	Person p1;//默认构造法
+	Person p2(18);//有参构造法
+	Person p3(p2);//拷贝造法
+
+	//注意事项1
+	//Person p1();程序会认为是函数声明，不会认为在创建对象
+
+
+	//2.显示法
+	Person p1;
+	Person p2 = Person(18);//有参构造
+	Person P3 = Person(p2);//拷贝构造
+
+	//Person(10);//匿名对象，当前执行结束后，系统会立即回收掉匿名对象
+
+	//注意事项2
+	//不要用拷贝构造函数初始化匿名对象，编译器会认为Person (p3) == Person p3;(对象声明)
+
+	//3.隐式括号法
+	Person p4 = 10;//有参构造  相当于写了Person p4 = Person(10);
+	Person p5 = p4;//拷贝构造
+}
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+
+```
+
+### 4.2.3 拷贝构造函数的调用时机
+
+- 使用一个已经创建完毕的对象来初始化一个新对象
+- 值传递的方式给函数参数传值
+- 以值方式返回局部变量
+
+```
+#include<iostream>;
+using namespace std;
+
+class Person
+{
+public:
+	Person()
+	{
+		cout << "Person的默认构造函数调用" << endl;
+	}
+	Person(int age)
+	{
+		m_age = age;
+		cout << "Person的有参构造函数调用" << endl;
+	}
+	Person(const Person &p)
+	{
+		m_age = p.m_age;
+		cout << "Person的拷贝构造函数调用" << endl;
+	}
+
+	~Person()
+	{
+		cout << "Person的析构函数调用" << endl;
+	}
+
+	int m_age;
+};
+
+//已创建完毕的对象初始化另一个对象
+void test01()
+{
+	Person p1;
+	Person p2(p1);
+}
+//值传递的方式给函数参数传值
+void dowork(Person p)
+{
+
+}
+
+void test02()
+{
+	Person p;
+	dowork(p);
+}
+//以值方式返回局部变量(这里未调用拷贝函数的原因：返回值优化)
+
+Person dowork2()
+{
+	Person p1;
+	cout << "p1的地址为：" << (int*) & p1 << endl;
+	return p1;
+}
+void test03()
+{
+	Person p = dowork2();
+	cout << "p的地址为：" << (int*)&p << endl;
+}
+
+int main()
+{
+	//test01();
+	//test02();
+	test03();
+
+	system("pause");
+	return 0;
+}
+```
+
+### 4.2.4 构造函数调用规则
+![alt text](image-22.png)
+
+调用规则如下：
+- 如果用户定义有参构造函数、c++不在提供默认无参构造，但是会提供默认拷贝构造
+- 如果用户定义拷贝构造函数、c++不会再提供其他构造函数
+
+### 4.2.5 深拷贝与浅拷贝
+
+- 浅拷贝：简单的赋值操作
+- 深拷贝：在堆区重新申请空间，进行拷贝工作
+
+![alt text](image-23.png)
+
+![alt text](image-24.png)
+
+### 4.2.6 初始化列表
+C++提供了初始化列表语法，用来初始化属性
+
+语法：``构造函数():属性值1(值1),属性值2(值2)...{}``
+
+### 4.2.7 类对象作为类成员
+C++类中的成员可以是另一个类的对象，我们称该成员为对象成员
+
+例如
+```
+class A{}
+
+class B
+{
+	A a;
+}
+
+```
+![alt text](image-25.png)
+
+### 4.2.8 静态成员
+静态成员就是在成员变量和成员函数前加上关键字静态、称为静态成员
+
+![alt text](image-26.png)
+
+静态成员变量两种访问方式：
+- 通过对象
+- 通过类名
+
+![alt text](image-27.png)
+
+静态成员函数两种访问方式：
+- 通过对象
+- 通过类名
+
+## 4.3 C++对象模型和this指针
+
+### 4.3.1 成员变量和成员函数分开存储
+在C++中，类内的成员变量和成员函数分开存储
+
+只有非静态成员变量才属于类的对象上
+
+### 4.3.2 this指针概念
+this指针用途：（this指针的本质是指针常量，指针的指向不可以修改）
+- 当形参和成员变量同名时，可用this指针来区分
+- 在类的非静态成员函数中返回对象本身，可使用``return *this``
+
+![alt text](image-30.png)
+![alt text](image-28.png)
+![alt text](image-29.png)
+
+### 4.3.3 空指针访问成员函数
+C++中空指针也是可以调用成员函数的，但是也要注意有没有用到This指针
+
+如果用到This指针，需要加以判断保证代码的健壮性
+
+### 4.3.4 const修饰成员函数
+![alt text](image-31.png)
+常函数和常对象的例子：
+```
+//常函数
+class Person
+{
+public:
+	//this指针的本质是指针常量，指针的指向不可以修改
+	//const Person* const this
+	//在成员函数后面加const，修饰的是This指向，让指针指向的值也不可以修改
+	void showperson() const
+	{
+		this->m_b = 100;
+		//this->m_a = 100;
+		//this = NULL;      //this指针不可以修改指针指向
+	}
+
+		void func()
+	{
+
+	}
+
+	int m_a;
+	mutable int m_b;   //特殊函数，即使在常函数中也可以修改这个值，加上关键字mutable
+};
+
+//常对象
+void test02()
+{
+	const Person p;//在对象前加const，变为常对象
+	//p.m_a = 100;
+	p.m_b = 100;//m_b是特殊值，在常对象下也可以修改
+
+	//常对象只能调用常函数
+	p.showperson();
+	//p.func();//常对象不可以调用普通成员函数，因为普通成员函数可以修改属性
+
+}
+```
+
+## 4.4 友元
+友元的关键字：``friend``
+- 全局函数做友元
+- 类做友元
+- 成员函数做友元
+
+1. 全局函数做友元
+```
+class Person
+{
+	friend void myfriend(Person* p);
+
+public:
+	string sittingroom = "客厅";
+
+private:
+	string bedroom = "卧室";
+
+};
+
+void myfriend(Person *p)
+{
+	cout << "正在访问：" << p->sittingroom << endl;
+	cout << "正在访问：" << p->bedroom << endl;
+}
+
+void test02()
+{
+	Person p1;
+	myfriend(&p1);
+}
+```
+2. 类做友元
+```
+//类做友元
+class Building;
+class Goodfri
+{
+public:
+	Goodfri();
+
+	void visit();//参观函数 用来访问building中的属性
+
+	Building* building;
+
+};
+
+class Building
+{
+	friend class Goodfri;
+public:
+	Building();
+	string sittingroom;
+
+private:
+	string bedroom;
+
+};
+
+Building::Building()
+{
+	sittingroom = "客厅";
+	bedroom = "卧室";
+}
+
+Goodfri::Goodfri()
+{
+	building = new Building;
+
+}
+
+void Goodfri::visit()
+{
+	cout << "好朋友正在访问：" << building->sittingroom << endl;
+	cout << "好朋友正在访问：" << building->bedroom << endl;
+}
+
+void test01()
+{
+	Goodfri p1;
+	p1.visit();
+	
+}
+```
+3. 成员函数做友元
+```
+#include<iostream>
+using namespace std;
+
+class Building;
+class Goodfriend
+{
+public:
+
+	Goodfriend();
+
+	void visit01();//让visit01可以访问building中私有成员
+	void visit02();//让visit02不可以访问building中私有成员
+
+	Building* building;
+
+
+};
+
+class Building
+{
+	//告诉编译器 Goodfriend类中的visit01函数 是Building的好朋友，可以访问私有内容
+	friend void Goodfriend::visit01();
+public:
+	Building();
+	string sittingroom;
+
+private:
+	string bedroom;
+};
+//类外实现成员函数
+
+Building::Building()
+{
+	sittingroom = "客厅";
+	bedroom = "卧室";
+}
+
+Goodfriend::Goodfriend()
+{
+	building = new Building;
+}
+
+void Goodfriend::visit01()
+{
+	cout << "visit01函数正在访问：" << building->sittingroom << endl;
+	cout << "visit01函数正在访问：" << building->bedroom << endl;
+}
+
+void Goodfriend::visit02()
+{
+	cout << "visit02函数正在访问：" << building->sittingroom << endl;
+	//cout << "visit函数正在访问：" << building->bedroom << endl;
+}
+
+void test01()
+{
+	Goodfriend p1;
+	p1.visit01();
+	p1.visit02();
+
+}
+
+
+int main()
+{
+	test01();
+
+	system("pause");
+	return 0;
+}
+```
