@@ -793,3 +793,666 @@ int main()
 	return 0;
 }
 ```
+
+## 4.5 运算符重载
+运算符重载概念:对已有的运算符重新进行定义，赋予其另一种功能，以适应不同的数据类型
+
+### 4.5.1 加号运算符重载
+作用:实现两个自定义数据类型相加的运算
+
+```
+#include<iostream>
+using namespace std;
+
+class Person
+{
+public:
+	int m_a;
+	int m_b;
+
+	//通过成员函数重载+号
+	/*Person operator+(Person& p)
+	{
+		Person temp;
+		temp.m_a = this->m_a + p.m_a;
+		temp.m_b = this->m_b + p.m_b;
+		return temp;
+	}*/
+
+};
+
+//通过全局函数重载+号
+Person operator+(Person& p1, Person& p2)
+{
+	Person temp;
+	temp.m_a = p1.m_a + p2.m_a;
+	temp.m_b = p1.m_b + p2.m_b;
+	return temp;
+}
+
+Person operator+(Person& p, int a)
+{
+	Person temp;
+	temp.m_a = p.m_a + a;
+	temp.m_b = p.m_b + a;
+	return temp;
+}
+
+void test01()
+{
+	Person p1;
+	p1.m_a = 10;
+	p1.m_b = 20;
+
+	Person p2;
+	p2.m_a = 10;
+	p2.m_b = 20;
+
+	//成员函数原理
+	//Person p3 = p1.operator+(p2);
+	
+	//全局函数原理
+	//Person p3 = operator+(p1, p2);
+	//Person p3 = p1 + p2;
+
+
+	//相当于Person p3 = operator+(p1,10);
+	Person p3 = p1 + 10;
+
+	cout << p3.m_a << endl;
+	cout << p3.m_b << endl;
+}
+
+int main()
+{
+	test01();
+	system("pause");
+	return 0;
+}
+```
+- 总结一：对于内置的数据类型的表达式的运算符是不可能改变的
+- 总结二：不要滥用运算符重载
+
+### 4.5.2 左移运算符重载
+作用：可以输出自定义数据类型
+```
+#include<iostream>
+using namespace std;
+
+class Person
+{
+	friend ostream& operator<<(ostream& cout, Person& p);
+
+public:
+	Person(int a, int b) :m_a(a), m_b(b){}
+
+private:
+	int m_a;
+	int m_b;
+
+};
+
+//不能写成员函数原因，p.operator<<(cout)相当于p << cout 不是我们想要的
+
+//想要实现链式法则输出，就需要返回一个值cout
+//cout<<p1 相当于 operator<<(cout,p)
+ostream& operator<<(ostream &cout,Person &p)
+{
+	cout << "p.m_a = " << p.m_a << "  p.m_b = " << p.m_b << endl;
+	return cout;
+}
+
+void test01()
+{
+	Person p1(10, 20);
+	Person p2(20, 30);
+	//链式法则
+	cout << p1 << p2;
+}
+
+int main()
+{
+	test01();
+	system("pause");
+	return 0;
+}
+```
+
+### 4.5.3 **递增运算符重载**
+
+```
+#include<iostream>
+using namespace std;
+
+class MyInteger
+{
+public:
+	MyInteger()
+	{
+		m_num = 0;
+	}
+public:
+	//前置递增运算符重载
+	MyInteger& operator++()
+	{
+		++m_num;
+		return *this;
+	}
+
+	//后置递增运算符重载
+	//void operator++(int)   int代表占位参数，可以用于区分前置和后置递增
+	MyInteger operator++(int)
+	{
+		//先记录当时的结果
+		MyInteger temp = *this;
+		//后递增
+		m_num++;
+		//最后将记录结果返回
+		return temp;
+	}
+
+	int m_num;
+};
+//MyInteger myinteger这里不用引用的原因：后置递增运算符时返回值为局部变量temp,重载函数结束就会释放
+// 非常量引用的初始值必须为左值（左值是指表达式结束后依然存在的持久对象）
+ostream& operator<<(ostream& cout, MyInteger myinteger)
+{
+	cout << "m_num = " << myinteger.m_num << endl;
+	return cout;
+}
+
+void test()
+{
+	MyInteger myinteger;
+	cout << myinteger++ << endl;
+	cout << "m_num = " << myinteger.m_num << endl;
+
+}
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+```
+
+### 4.5.4 赋值运算符重载
+C++编译器至少给一个类添加4个函数
+
+- 默认构造函数(无参，函数体为空)
+- 默认析构函数(无参，函数体为空)
+- 默认拷贝构造函数，对属性进行值拷贝
+- 赋值运算符运算符=，对属性进行值拷贝
+
+如果类中有属性指向堆区，做赋值操作时也会出现深浅拷贝问题
+```
+#include<iostream>
+using namespace std;
+
+class Person
+{
+public:
+	Person(int a)
+	{
+		m_age = new int(a);
+	}
+
+	Person(const Person &p)
+	{
+		 m_age = new int(*p.m_age);
+	}
+	//考虑到链式法则实现 a = b = c,这里不用void operator=(Person& p)
+	Person& operator=(Person& p)
+	{
+		//编译器是提供浅拷贝
+		//m_age = p.m_age;
+
+		//先判断是否有属性在堆区，有先释放干净，再深拷贝
+		if (m_age != NULL)
+		{
+			delete m_age;
+			m_age = NULL;
+		}
+		//深拷贝
+		m_age = new int(*p.m_age);
+		return *this;
+	}
+
+	~Person()
+	{
+		if (m_age != NULL)
+		{
+			delete m_age;
+			m_age = NULL;
+		}
+	}
+	int *m_age;
+};
+
+void test()
+{
+	Person p1(18);
+	Person p2(20);
+	Person p3(30);
+	p3 = p2 = p1;
+
+	cout << "p1.m_a = " << *p1.m_age << endl;
+	cout << "p2.m_a = " << *p2.m_age << endl;
+	cout << "p3.m_a = " << *p3.m_age << endl;
+}
+
+int main()
+{
+	test();
+	system("pause");
+	return 0;
+}
+```
+
+### 4.5.5 关系运算符重载
+作用:重载关系运算符，可以让两个自定义类型对象进行对比操作
+```
+#include<iostream>
+using namespace std;
+
+class Person
+{
+public:
+	Person(string name, int age)
+	{
+		m_name = name;
+		m_age = age;
+	}
+
+	bool operator==(Person& p)
+	{
+		if (m_name == p.m_name && m_age == p.m_age)
+		{
+			return true;
+		}
+		return false;
+	}
+
+	string m_name;
+	int m_age;
+};
+
+void test()
+{
+	Person p1("dc", 22);
+	Person p2("dc", 20);
+
+	if (p1 == p2)
+	{
+		cout << "p1和p2是同一个人" << endl;
+	}
+	else
+	{
+		cout << "p1和p2不是同一个人" << endl;
+	}
+}
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+```
+
+### 4.5.6 函数调用运算符重载
+- 函数调用运算符()也可以重载
+- 由于重载后使用的方式非常像函数的调用，因此称为仿函数
+- 仿函数没有固定写法，非常灵活
+
+```
+#include<iostream>
+using namespace std;
+
+class Myprint
+{
+public:
+	//重载函数调用运算符
+	void operator()(string test)
+	{
+		cout << test << endl;
+	}
+};
+
+//仿函数非常灵活，没有固定的写法
+//加法类
+
+class Myadd
+{
+public:
+	int operator()(int a, int b)
+	{
+		return a + b;
+	}
+};
+
+void Myprint02(string test)
+{
+	cout << test << endl;
+}
+
+void test()
+{
+	Myprint myprint;
+	
+	myprint("hello world");//由于使用起来非常类似于函数调用，因此又称为：仿函数
+
+	Myprint02("hello world");//函数调用
+}
+
+void test02()
+{
+	Myadd myadd;
+
+	int add = myadd(10, 20);
+	cout << "add = " << add << endl;
+
+	//匿名函数对象
+	cout << Myadd()(100, 100) << endl;
+}
+
+int main()
+{
+	//test();
+	test02();
+
+	system("pause");
+	return 0;
+}
+```
+
+## 4.6 继承
+继承是面向对象三大特性之一
+
+语法：``class A:public B;``
+
+- A类称为 子类或派生类
+- B类称为 父类或基类
+
+![alt text](image-33.png)
+
+![alt text](image-32.png)
+
+### 4.6.2 继承方式
+继承的语法：``class 子类: 继承方式 父类``
+
+继承方式一共有三种：
+- 公共继承
+- 保护继承
+- 私有继承
+
+![alt text](image-34.png)
+
+### 4.6.3 继承中的对象模型
+
+```
+#include<iostream>
+using namespace std;
+
+class Base
+{
+public:
+	int m_a;
+protected:
+	int m_b;
+private:
+	int m_c; //私有成员只是被隐藏了，但是还是会被继承下去
+
+};
+
+class son :public Base
+{
+public:
+	int a;
+};
+
+void test()
+{
+	//16
+	cout << "sizeof(son) = " << sizeof(son) << endl;
+}
+
+int main()
+{
+	test();
+	system("pause");
+	return 0;
+}
+```
+
+利用开发人员命令提示工具查看对象模型
+1. 跳转盘符
+2. 跳转文件路径
+3. dir
+4. 查看命令``cl /dl reportSingleClassLayout类名 文件名``
+5. 在我们的版本中查看命令这样写（不会报错）：
+   ``cl /EHsc /d1reportSingleClassLayout类名 文件名``
+
+![alt text](image-35.png)
+
+### 4.6.4 继承中的构造顺序
+总结:继承中先调用父类构造函数，再调用子类构造函数，构顺序与构造相反
+
+### 4.6.5 继承同名成员处理方式
+
+问题:当子类与父类出现同名的成员，如何通过子类对象，访问到子类或父类中同名的数据呢？
+- 访问子类同名成员直接访问即可
+- 访问父类同名成员需要加作用域
+```
+#include<iostream>
+using namespace std;
+
+class Base
+{
+public:
+	Base()
+	{
+		m_a = 100;
+	}
+
+	void func()
+	{
+		cout << "Base - func调用" << endl;
+	}
+
+	void func(int a)
+	{
+		cout << "Base - func(int a)调用" << endl;
+	}
+
+	int m_a;
+};
+
+class Son :public Base
+{
+public:
+	Son()
+	{
+		m_a = 200;
+	}
+
+	void func()
+	{
+		cout << "Son - func调用" << endl;
+	}
+
+	int m_a;
+};
+
+void test()
+{
+	Son s1;
+	cout << "Son 下 m_a = " << s1.m_a << endl;
+	//如果通过子类对象访问到父类中同名成员，需要加作用域
+	cout << "Base 下 m_a = " << s1.Base::m_a << endl;
+}
+
+void test02()
+{
+	Son s2;
+	s2.Base::func();
+
+	//如果子类中出现和父类同名的成员函数，子类的同名成员会隐藏掉父类中所有同名成员函数
+	s2.Base::func(100);
+}
+
+int main()
+{
+	test02();
+
+	system("pause");
+	return 0;
+}
+```
+![alt text](image-36.png)
+
+### 4.6.6 继承同名静态成员处理
+
+```
+#include<iostream>
+using namespace std;
+
+class Base
+{
+public:
+
+	static void func()
+	{
+		cout << "Base - func调用" << endl;
+	}
+
+	static void func(int a)
+	{
+		cout << "Base - func(int a)调用" << endl;
+	}
+
+	static int m_a;
+};
+int Base::m_a = 100;
+
+class Son :public Base
+{
+public:
+
+	static void func()
+	{
+		cout << "Son - func调用" << endl;
+	}
+
+	static int m_a;
+};
+int Son::m_a = 200;
+
+//同名静态成员属性
+void test()
+{
+	Son s1;
+	cout << "通过对象访问" << endl;
+	cout << "Son 下 static m_a = " << s1.m_a << endl;
+	cout << "Base 下 static m_a = " << s1.Base::m_a << endl;
+
+	cout << "通过类名访问" << endl;
+	cout << "Son 下 static m_a =" << Son::m_a << endl;
+	cout << "Base 下 static m_a = " << Son::Base::m_a << endl;
+}
+
+//同名静态成员函数
+void test02()
+{
+	Son s2;
+	cout << "通过对象访问" << endl;
+	s2.func();
+	s2.Base::func();
+	s2.Base::func(100);
+
+	cout << "通过类名访问" << endl;
+	Son::func();
+	Son::Base::func();
+	Son::Base::func(100);
+}
+
+int main()
+{
+	test02();
+
+	system("pause");
+	return 0;
+}
+```
+总结:同名静态成员处理方式和非静态处理方式一样，只不过有两种访问的方式(通过对象和通过类名)
+
+### 4.6.7 多继承语法
+C++允许一个类继承多个类
+
+语法：``class 子类：继承方式 父类1，继承方式，父类2...``
+
+多继承可能会引发父类中有同名成员出现，需要加作用域区分
+
+**C++实际开发中不建议用多继承**
+
+### 4.6.8 菱形继承
+菱形继承概念：
+- 两个派生类继承同一个基类
+- 又有某个类同时继承者两个派生类
+- 这种继承被称为菱形继承，或者钻石继承
+
+![alt text](image-37.png)
+菱形继承问题：
+1. 羊继承了动物的数据，驼同样继承了动物的数据，当草泥马使用数据时，就会产生二义性.
+2. 草泥马继承自动物的数据继承了两份，其实我们应该清楚，这份数据我们只需要一份就可以.
+
+```
+#include<iostream>
+using namespace std;
+
+class Animals
+{
+public:
+	int m_Age;
+};
+
+//利用虚继承解决菱形继承的问题 virtual
+//继承之前加上关键字虚拟变为虚继承
+//动物类称为虚基类
+class Sheep:virtual public Animals{};
+
+class Tuo :virtual public Animals{};
+
+class Sheeptuo :public Sheep, public Tuo{};
+
+
+void test()
+{
+	Sheeptuo s1;
+
+	s1.Sheep::m_Age = 18;
+	s1.Tuo::m_Age = 28;
+	//当菱形继承，两个父类拥有相同数据，需要加以作用域区分
+	cout << "s1.Sheep::m_Age = "<< s1.Sheep::m_Age <<endl;
+	cout << "s1.Tuo::m_Age = " << s1.Tuo::m_Age << endl;
+	cout << "s1.m_Age = " << s1.m_Age << endl;
+}
+
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+```
+
+![alt text](image-38.png)
+
+总结：
+- 菱形继承带来的主要问题是子类继承两份相同的数据，导致资源浪费以及毫无意义
+- 利用虚继承可以解决菱形继承问题
