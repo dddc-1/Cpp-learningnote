@@ -539,6 +539,65 @@ int main()
 
 ![alt text](image-24.png)
 
+```
+#include<iostream>;
+using namespace std;
+
+class Person
+{
+public:
+	Person()
+	{
+		cout << "Person的默认构造函数调用" << endl;
+	}
+
+	Person(int age,int height)
+	{
+		m_age = age;
+		m_height = new int(height);
+		cout << "Person的有参构造函数调用" << endl;
+	}
+
+	Person(const Person& p)
+	{
+		m_age = p.m_age;
+		m_height = new int(*p.m_height);
+		cout << "Person的拷贝构造函数调用" << endl;
+	}
+
+	~Person()
+	{
+		if (m_height != NULL)
+		{
+			delete m_height;
+			m_height = NULL;
+		}
+		cout << "Person的析构函数调用" << endl;
+	}
+
+	int m_age;
+	int* m_height;
+};
+
+void test01()
+{
+	Person p1(18,175);
+	cout << "p1年龄为：" << p1.m_age << endl;
+	cout << "p1身高为：" << *p1.m_height << endl;
+	Person p2(p1);
+	cout << "p2年龄为：" << p2.m_age << endl;
+	cout << "p2身高为：" << *p2.m_height << endl;
+}
+
+int main()
+{
+	test01();
+
+	system("pause");
+	return 0;
+}
+```
+
 ### 4.2.6 初始化列表
 C++提供了初始化列表语法，用来初始化属性
 
@@ -1456,3 +1515,1142 @@ int main()
 总结：
 - 菱形继承带来的主要问题是子类继承两份相同的数据，导致资源浪费以及毫无意义
 - 利用虚继承可以解决菱形继承问题
+
+## 4.7 多态
+多态是C++面向对象三大特性之一
+
+多态分为两类
+- 静态多态:函数重载和运算符重载属于静态多态，复用函数名
+- 动态多态:派生类和虚函数实现运行时多态
+
+静态多态和动态多态区别：
+
+- 静态多态的函数地址早绑定-编译阶段确定函数地址
+- 动态多态的函数地址晚绑定-运行阶段确定函数地址
+
+### 4.7.1 多态的基本概念
+```
+#include<iostream>
+using namespace std;
+
+class Animals
+{
+public:
+	virtual void speak()
+	{
+		cout << "动物在说话" << endl;
+	}
+};
+
+class Cat:public Animals
+{
+public:
+	//重写 函数返回值类型   函数名 参数列表 完全相同
+	void speak()
+	{
+		cout << "猫在说话" << endl;
+	}
+};
+
+class Dog :public Animals
+{
+public:
+	void speak()
+	{
+		cout << "狗在说话" << endl;
+	}
+};
+
+//执行说话的函数
+//地址早绑定在编译阶段确定函数地址
+//如果想执行让猫说话，那么这个函数地址就不能提前绑定，需要在运行阶段进行绑定，地址晚绑定
+
+//动态多态满足条件
+//1、有继承关系
+//2、子类重写父类的虚函数
+
+//动态多态使用
+//父类的指针或者引用指向子类对象 Animals& animals
+
+void doSpeak(Animals& animals)
+{
+	animals.speak();
+}
+
+void test()
+{
+	Cat cat;
+	doSpeak(cat);
+
+	Dog dog;
+	doSpeak(dog);
+}
+
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+```
+总结：
+
+多态满足条件：
+- 有继承关系
+- 子类重写父类中的虚函数
+
+多态使用条件：
+- 父类指针或引用指向子类对象
+
+重写:函数返回值类型函数名参数列表完全-致称为重写
+
+### 4.7.2 多态案例--计算机类
+
+案例描述：
+
+分别利用普通写法和多态技术，设计实现两个操作数进行运算的计算器类
+
+多态的优点：
+- 代码组织结构清晰
+- 可读性强
+- 利于前期和后期的扩展以及维护
+
+### 4.7.3 纯虚函数和抽象类
+
+在多态中，通常父类中虚函数的实现是毫无意义的，主要都是调用子类重写的内容，因此可以将虚函数改为纯虚函数
+
+纯虚函数语法： ``virtual 返回值类型 函数名  (参数列表)=0；``
+
+当类中有了纯虚函数，这个类也称为**抽象类**
+
+抽象类特点:
+- 无法实例化对象
+- 子类必须重写抽象类中的纯虚函数，否则也属于抽象类
+
+### 4.7.4 虚析构和纯虚析构
+多态使用时，如果子类中有属性开辟到堆区，那么父类指针在释放时无法调用到子类的析构代码
+
+解决方式：将父类中的析构函数改为虚析构或者纯虚析构
+
+虚析构和纯虚析构共性：
+- 可以解决父类指针释放子类对象
+- 都需要有具体的函数实现
+
+虚析构和纯虚析构区别：
+- 如果是纯虚析构，该类属于抽象类，无法实例化对象
+
+虚析构语法：``virtual ~类名() {}``
+
+纯虚析构语法：``virtual ~类名() = 0 ;``
+``类名::~类名() {}``
+
+```
+#include<iostream>
+using namespace std;
+
+class Animals
+{
+public:
+	Animals()
+	{
+		cout << "animals的构造函数调用" << endl;
+	}
+	//虚析构
+	/*virtual ~Animals()
+	{
+		cout << "animals的析构函数调用" << endl;
+	}*/
+	//纯虚析构
+	virtual ~Animals() = 0;
+
+	virtual void Speak()
+	{
+		cout << "动物在说话" << endl;
+	}
+};
+
+//纯虚析构也需要一个实现
+Animals::~Animals()
+{
+	cout << "animals的析构函数调用" << endl;
+}
+
+class Cat:public Animals
+{
+public:
+	Cat(string name)
+	{
+		cout << "cat的构造函数调用" << endl;
+		m_name = new string(name);
+	}
+
+	~Cat()
+	{
+		if (m_name != NULL)
+		{
+			cout << "cat的析构函数调用" << endl;
+			delete m_name;
+			m_name = NULL;
+		}
+		
+	}
+
+	virtual void Speak()
+	{
+		cout << *m_name << "猫在说话" << endl;
+	}
+
+	string *m_name;
+};
+
+void test01()
+{
+	Animals* a1 = new Cat("Tom");
+	a1->Speak();
+	delete a1;
+}
+
+int main()
+{
+	test01();
+
+	system("pause");
+	return 0;
+}
+```
+
+# 5 文件操作
+![alt text](image-39.png)
+
+## 5.1 文本文件
+### 5.1.1 写文件
+写文件步骤如下：
+1. 包含头文件：``#include<fstream>``
+2. 创建流对象：``ofsrteam ofs;``
+3. 打开文件：``ofs.open("文件路径",打开方式);``
+4. 写数据：``ofs<<"写入的数据";``
+5. 关闭文件：``ofs.close();``
+
+文件打开方式：
+
+|打开方式|解释|
+|:----:|:----:|
+|ios::in|为读文件而打开文件|
+|ios::out|为写文件而打开文件|
+|ios::ate|初始位置：文件尾|
+|ios::app|追加方式写文件|
+|ios::trunc|如果文件存在，先删除，再创建|
+|ios::binary|二进制方式|
+
+注意：文件打开方式可以配合使用，利用``|``操作符
+
+例如：用二进制方式写文件``ios::binary | ios::out``
+
+### 5.1.2 读文件
+读文件与写文件步骤相似，但是读取方式相对于比较多
+
+读文件步骤如下：
+
+1. 包含头文件:``#include<fstream>``
+2. 创建流对象:``ifstream ifs；``
+3. 打开文件并判断文件是否打开成功:``ifs.Open(“文件路径”，打开方式)；``
+4. 读数据:四种方式读取
+5. 关闭文件:``ifs.lose()``
+
+```
+#include<iostream>
+using namespace std;
+#include<fstream>
+#include<string>
+
+void test()
+{
+	//2.创建流对象
+	ifstream ifs;
+
+	//3.打开文件并判断是否打开成功
+	ifs.open("test.txt", ios::in);
+
+	if (!ifs.is_open())
+	{
+		cout << "文件打开失败，文件不存在" << endl;
+		return;
+	}
+	//4.读入数据
+	//第一种
+	//char buf[1024] = { 0 };
+	//while (ifs >> buf)
+	//{
+	//	cout << buf << endl;
+	//}
+	
+	//第二种
+	//char buf[1024] = { 0 };
+	//while (ifs.getline(buf, sizeof(buf)))
+	//{
+	//	cout << buf << endl;
+	//}
+	
+	//第三种
+	string buf;
+	while (getline(ifs, buf))
+	{
+		cout << buf << endl;
+	}
+
+	//第四种方法
+	char c;
+	while ((c = ifs.get() != EOF))//EOF:  end of file文件结尾符
+	{
+		cout << c;
+	}
+
+	//5.关闭文档
+	ifs.close();
+}
+
+int main()
+{
+	test();
+	system("pause");
+	return 0;
+}
+```
+总结：
+- 读文件可以利用ifstream,或者fstream类
+- 利用is_open函数可以判断文件是否打开成功
+- 关闭关闭文件
+
+# C++提高编程
+
+# 1.模版
+
+本阶段主要针对C++泛型编程和stl技术做详细讲解，探讨C++更深层的使用
+
+## 1.1 模版的概念
+模版就是建立通用的模具，大大提高复用性
+
+## 1.2 函数模版
+C++另一种编程思想称为泛型编程
+- 主要利用的技术就是模板
+- C++提供两种模板机制:**函数模板**和**类模板**
+
+### 1.2.1 函数模版语法
+函数模板作用：
+
+建立一个通用函数，其函数返回值类型和形参类型可以不具体制定，用一个虚拟的类型来代表
+
+语法：
+```
+template<typename T>
+函数定义或声明
+```
+![alt text](image-40.png)
+
+总结：
+- 函数模板利用关键字模板
+- 使用函数模板有两种方式:自动类型推导、显示指定类型
+- 模板的目的是为了提高复用性，将类型参数代
+
+### 1.2.2 函数模版注意事项
+
+注意事项：
+- 自动类型推导，必须推导出一致的数据类型T，才可以使用
+- 模板必须要确定出T的数据类型，才可以使用
+
+### 1.2.3 普通函数和函数模版的区别
+
+普通函数与函数模板区别：
+- 普通函数调用时可以发生自动类型转换(隐式类型转换)
+- 函数模板调用时，如果利用自动类型推导，不会发生隐式类型转换
+- 如果利用显示指定类型的方式，可以发生隐式类型转换
+
+### 1.2.4 普通函数和函数模版的调用规则
+调用规则如下
+1. 如果函数模板和普通函数都可以实现，优先调用普通函数
+2. 可以通过空模板参数列表来强制调用函数模板
+3. 函数模板也可以发生重载
+4. 如果函数模板可以产生更好的匹配，优先调用函数模板
+
+### 1.2.4 函数模版的局限性
+
+模板的通用性并不是万能的
+
+![alt text](image-41.png)
+
+在上述代码中，如果T的数据类型传入的是像Person这样的自定义数据类型，也无法正常运行
+
+因此C++为了解决这种问题，提供模板的重载，可以为这些特定的类型提供具体化的模板
+![alt text](image-42.png)
+
+![alt text](image-43.png)
+
+## 1.3 类模版
+
+### 1.3.1 类模板语法
+建立一个通用类，类中的成员数据类型可以不具体制定，用一个虚拟的类型来代表
+
+语法：
+```
+template<typename T>
+类
+```
+![alt text](image-44.png)
+类模版和函数模版语法相似，在声明模版template后面加类，此类称为模版
+
+### 1.3.2 类模板与函数模版区别
+类模板与函数模板区别主要有两点：
+1. 类模板没有自动类型推导的使用方式
+2. 类模板在模板参数列表中可以有默认参数
+
+### 1.3.3 类模版中成员函数创建时机
+
+类模板中成员函数和普通类中成员函数创建时机是有区别的
+- 普通类中的成员函数一开始就可以创建
+- 类模板中的成员函数在调用时才创建
+
+总结：类模版中的成员函数并不是一开始就创建的，在调用时才去创建、
+
+### 1.3.4 类模版对象做函数参数
+
+一共有三种传入方式：
+
+1. 指定传入的类型 --直接显示对象的数据类型
+2. 参数模板化     --将对象中的参数变为模板进行传递
+3. 整个类模板化   --将这个对象类型模板化进行传递
+
+```
+#include<iostream>
+using namespace std;
+#include<string>
+
+template<class T1,class T2>
+class Person
+{
+public:
+	Person(T1 name,T2 age)
+	{
+		this->m_name = name;
+		this->m_age = age;
+	}
+
+	void showperson()
+	{
+		cout << "姓名：" << this->m_name << "\t年龄：" << this->m_age << endl;
+	}
+
+	T1 m_name;
+	T2 m_age;
+};
+
+//1.指定传入类型
+void printperson1(Person<string, int>&p)
+{
+	p.showperson();
+}
+
+void test01()
+{
+	Person<string, int>p1("孙悟空", 100);
+	printperson1(p1);
+}
+
+//2.参数模板化
+template<class T1,class T2>
+void printperson2(Person<T1, T2>& p)
+{
+	p.showperson();
+	cout << "T1的类型为" << typeid(T1).name() << endl;
+	cout << "T2的类型为" << typeid(T2).name() << endl;
+}
+
+void test02()
+{
+	Person<string, int>p2("猪八戒", 90);
+	printperson2(p2);
+}
+
+//3.整个类模版化
+template<class T>
+void printperson3(T& p)
+{
+	p.showperson();
+	cout << "T的类型为" << typeid(T).name() << endl;
+}
+
+void test03()
+{
+	Person<string, int>p3("唐生", 20);
+	printperson3(p3);
+}
+
+int main()
+{
+	test03();
+
+	system("pause");
+	return 0;
+}
+```
+总结：
+- 通过类模板创建的对象，可以有三种方式向函数中进行传参
+- 使用比较广泛是第一种:指定传入的类型
+
+### 1.3.5 类模版与继承
+
+当类模板碰到继承时，需要注意一下几点
+- 当子类继承的父类是一个类模板时，子类在声明的时候，要指定出类中T的类型
+- 如果不指定，编译器无法给子类分配内存
+- 如果想灵活指定出父类中T的类型，子类也需变为类模板
+
+总结:如果父类是类模板，子类需要指定出父类中T的数据类型
+
+### 1.3.6 类模版成员函数类外实现
+```
+#include<iostream>
+using namespace std;
+#include<string>
+
+template<class T1, class T2>
+class People
+{
+public:
+	People(T1 name, T2 age);
+	//{
+	//	this->m_name = name;
+	//	this->m_age = age;
+	//}
+
+	void showperson();
+	//{
+	//	cout << "姓名：" << this->m_name << "\t年龄：" << this->m_age << endl;
+	//}
+
+	T1 m_name;
+	T2 m_age;
+};
+
+//构造函数类外实现
+template<class T1, class T2>
+People<T1,T2>::People(T1 name, T2 age)
+{
+	this->m_name = name;
+	this->m_age = age;
+}
+
+//成员函数类外实现
+template<class T1, class T2>
+void People<T1,T2>::showperson()
+{
+	cout << "姓名：" << this->m_name << "\t年龄：" << this->m_age << endl;
+}
+
+void test()
+{
+	People<string, int>p1("ss", 10);
+	p1.showperson();
+}
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+```
+
+### 1.3.7 类模版分文件编写
+![alt text](image-45.png)
+
+### 1.3.8 类模版与友元
+![alt text](image-46.png)
+
+总结:建议全局函数做类内实现，用法简单，而且编译器可以直接识别
+
+# 2. STL初识
+
+## 2.1 STL的诞生
+- 长久以来，软件界一直希望建立一种可重复利用的东西
+- C++的面向对象和泛型编程思想，目的就是复用性的提升
+- 大多情况下，数据结构和算法都未能有一套标准，导致被迫从事大量重复工作
+- 为了建立数据结构和算法的一套标准，诞生了STL
+
+## 2.2STL基本概念
+- STL(Standard Template Library)标准模板库
+- STL从广义上分为:容器(容器)算法(算法)迭代器(迭代器)
+- 容器和算法之间通过迭代器进行无缝连接.
+- STL几乎所有的代码都采用了模板类或者模板函数
+
+## 2.3STL六大组件
+STL大体分为六大组件，分别是:容器、算法、迭代器、仿函数、适配器(配接器)、空间配置器
+1. 容器:各种数据结构，如vector、List、deque、set、map等，用来存放数据
+2. 算法:各种常用的算法，如Sort、Find、Copy、For_Each等
+3. 迭代器:扮演了容器与算法之间的胶合剂
+4. 仿函数:行为类似函数，可作为算法的某种策略
+5. 适配器:一种用来修饰容器或者仿函数或迭代器接口的东西
+6. 空间配置器:负责空间的配置与管理
+
+## 2.4 STL中容器、算法、迭代器
+**容器**:置物之所也
+
+STL容器就是将运用最广泛的一些数据结构实现出来
+
+常用的数据结构:数组，链表，树，栈，队列，集合，映射表等
+
+这些容器分为序列式容器和关联式容器两种：
+
+- 序列式容器:强调值的排序，序列式容器中的每个元素均有固定的位置，
+- 关联式容器:二叉树结构，各元素之间没有严格的物理上的顺序关系
+
+
+**算法**:问题之解法也
+
+有限的步骤，解决逻辑或数学上的问题，这一门学科我们叫做算法(Algorithms)
+
+算法分为:质变算法和非质变算法
+- 质变算法:是指运算过程中会更改区间内的元素的内容.例如拷贝，替换删除等等
+- 非质变算法:是指运算过程中不会更改区间内的元素内容，例如查找、计数、遍历、寻找极值等等
+
+
+**迭代器**:容器和算法之间粘合剂
+
+提供一种方法，使之能够依序寻访某个容器所含的各个元素，而又无需暴露该容器的内部表示方式
+- 每个容器都有自己专属的迭代器
+- 迭代器使用非常类似于指针，初学阶段我们可以先理解迭代器为指针
+
+![alt text](image-47.png)
+常用的容器中迭代器种类为双向迭代器，和随机访问迭代器
+
+## 2.5 容器、算法、迭代器初识
+STL中最常用的容器为Vector，可以理解为数组，下面我们将学习如何向这个容器中插入数据、并遍历这个容器
+### 2.5.1 vector存放内置数据类型
+![alt text](image-48.png)
+
+```
+using namespace std;
+#include<vector>
+#include<algorithm>
+
+void myprint(int val)
+{
+	cout << val << endl;
+}
+
+void test01()
+{
+	//创建一个vector容器数组
+	vector<int> v;
+
+	//向容器中插入数据
+	v.push_back(10);
+	v.push_back(20);
+	v.push_back(30);
+	v.push_back(40);
+	v.push_back(50);
+
+	////通过迭代器访问容器中的数据
+	//vector<int>::iterator itBegin = v.begin();  //起始迭代器  指向容器中第一个元素
+	//vector<int>::iterator itEnd = v.end();  //起始迭代器  指向容器中最后一个元素的下一个位置
+
+	////第一种遍历方式
+	//while (itBegin != itEnd)
+	//{
+	//	cout << *itBegin << endl;
+	//	itBegin++;
+	//}
+
+	////第二种遍历方式
+	//for (vector<int>::iterator it = v.begin(); it != v.end(); it++)
+	//{
+	//	cout << *it << endl;
+	//}
+
+	//第三种遍历方式
+	for_each(v.begin(), v.end(), myprint);
+}
+
+int main()
+{
+	test01();
+
+	system("pause");
+	return 0;
+}
+```
+
+### 2.5.2 vector存放自定义数据类型
+```
+#include<iostream>
+using namespace std;
+#include<vector>
+
+class Person
+{
+public:
+	Person(string name, int age)
+	{
+		this->m_name = name;
+		this->m_age = age;
+	}
+
+	string m_name;
+	int m_age;
+};
+
+
+void test01()
+{
+	vector<Person>v;
+
+	Person p1("aaa", 10);
+	Person p2("bbb", 12);
+	Person p3("ccc", 13);
+	Person p4("ddd", 14);
+	Person p5("eee", 15);
+
+	v.push_back(p1);
+	v.push_back(p2);
+	v.push_back(p3);
+	v.push_back(p4);
+	v.push_back(p5);
+
+	for (vector<Person>::iterator it = v.begin(); it != v.end(); it++)
+	{
+		cout << "姓名：" << it->m_name << "年龄：" << it->m_age << endl;
+	}
+
+}
+
+//存放自定义数据类型的指针
+void test02()
+{
+	vector<Person*>v;
+
+	Person p6("aaa", 10);
+	Person p7("bbb", 12);
+	Person p8("ccc", 13);
+	Person p9("ddd", 14);
+	Person p10("eee", 15);
+
+	v.push_back(&p6);
+	v.push_back(&p7);
+	v.push_back(&p8);
+	v.push_back(&p9);
+	v.push_back(&p10);
+
+	for (vector<Person*>::iterator it = v.begin(); it != v.end(); it++)
+	{
+		cout << "姓名：" << (*it)->m_name << "年龄：" << (*it)->m_age << endl;
+	}
+}
+
+int main()
+{
+	test02();
+
+	system("pause");
+	return 0;
+}
+```
+
+### 2.5.3 vector容器嵌套容器
+```
+#include<iostream>
+using namespace std;
+#include<vector>
+
+void test()
+{
+	vector<vector<int>>v;
+
+	vector<int>v1;
+	vector<int>v2;
+	vector<int>v3;
+	vector<int>v4;
+	vector<int>v5;
+
+	for (int i = 0; i < 5; i++)
+	{
+		v1.push_back(i + 1);
+		v2.push_back(i + 2);
+		v3.push_back(i + 3);
+		v4.push_back(i + 4);
+		v5.push_back(i + 5);
+	}
+
+	v.push_back(v1);
+	v.push_back(v2);
+	v.push_back(v3);
+	v.push_back(v4);
+	v.push_back(v5);
+
+	for (vector<vector<int>>::iterator it = v.begin(); it != v.end(); it++)
+	{
+		//（*it）代表vector<int>类型，再遍历
+		for (vector<int>::iterator vit = (*it).begin(); vit != (*it).end(); vit++)
+		{
+			cout << (*vit) << " ";
+		}
+		cout << endl;
+	}
+}
+
+
+
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+```
+
+# 3 STL常用容器
+
+## 3.1 string容器
+### 3.1.1 string基本概念
+**本质**:
+- string是C++风格的字符串，而string本质上是一个类
+- 
+**string和char*区别**:
+- char*是一个指针
+- string是一个类，类内部封装了char*，理这个字符串，是一个char*型的容器。
+
+**特点**:
+- string 类内部封装了很多成员方法
+
+例如:查找find，拷贝copy，删除delete替换replace，插入insert
+
+string管理char*所分配的内存，不用担心复制越界和取值越界等，由类内部进行负责
+
+### 3.1.2 string构造函数
+![alt text](image-49.png)
+
+```
+#include<iostream>
+using namespace std;
+#include<string>
+
+
+void test()
+{
+	string s1;
+
+	const char* str = "hello world";
+	string s2(str);
+	cout << "s2 = " << s2 << endl;
+
+	string s3(s2);
+	cout << "s3 = " << s3 << endl;
+
+	string s4(10, 'a');
+	cout << "s4 = " << s4 << endl;
+}
+
+
+int main()
+{
+	test();
+
+	system("pause");
+	return 0;
+}
+```
+
+总结:string的多种构造方式没有可比性，灵活使用即可
+
+### 3.1.3 string赋值操作
+![alt text](image-50.png)
+
+```
+#include<iostream>
+using namespace std;
+#include<string>
+
+//string& operator=(const char* s);          //char*类型字符串 赋值给当前的字符串
+//string& operator=(const string& s);        //把字符串s赋给当前的字符串
+//string& operator=(char c);                 //字符赋值给当前的字符串
+//string& assign(const char* s);             //把字符串s赋给当前的字符串
+//string& assign(const char* s, int n);      //把字符串s的前n个字符赋给当前的字符串
+//string& assign(const string& s);           //把字符串s赋给当前字符串
+//string& assign(int n, char c);             //用n个字符c赋给当前字符串
+
+void test()
+{
+	string s1;
+	s1 = "hello world";
+	cout << "s1 = " << s1 << endl;
+
+	string s2;
+	s2 = s1;
+	cout << "s2 = " << s2 << endl;
+
+	string s3;
+	s3 = 'a';
+	cout << "s3 = " << s3 << endl;
+
+	string s4;
+	s4.assign("hello world");
+	cout << "s4 = " << s4 << endl;
+
+	string s5;
+	s5.assign("hello world", 5);
+	cout << "s5 = " << s5 << endl;
+
+	string s6;
+	s6.assign(s5);
+	cout << "s6 = " << s6 << endl;
+
+	string s7;
+	s7.assign(10,'w');
+	cout << "s7 = " << s7 << endl;
+}
+
+int main()
+{
+	test();
+	system("pause");
+	return 0;
+}
+```
+
+总结:
+
+string的赋值方式很多，``operator=``这种方式是比较实用的
+
+### 3.1.4 string字符串拼接
+![alt text](image-51.png)
+
+### 3.1.5 string查找和替换
+
+![alt text](image-52.png)
+```
+#include<iostream>
+using namespace std;
+#include<string>
+
+//1.查找
+void test()
+{
+	string s1;
+	s1 = "abcdefgde";
+
+	int pos = s1.find("de");
+	if (pos == -1)
+	{
+		cout << "查找内容不存在" << endl;
+	}
+	else
+	{
+		cout << "pos = " << pos << endl;
+	}
+
+	//rfind 从右向左查
+	pos = s1.rfind("de");
+	if (pos == -1)
+	{
+		cout << "查找内容不存在" << endl;
+	}
+	else
+	{
+		cout << "pos = " << pos << endl;
+	}
+
+}
+
+//2.替换
+void test02()
+{
+	string s2;
+	s2 = "abcdefgde";
+
+	//从1号位置开始 3个字符被替换为1111
+	s2.replace(1, 3, "1111");
+	cout << s2 << endl;
+}
+
+int main()
+{
+	test02();
+
+	system("pause");
+	return 0;
+}
+```
+
+总结:
+- find查找是从连往后，rfind从右往左
+- find找到字符串后返回查找的第一个字符位置，找不到返回-1
+- replace在替换时，要指定从哪个位置起，多少个字符，替换成什么样的字符串
+
+### 3.1.6 string字符串比较
+
+![alt text](image-54.png)
+
+### 3.1.7 string字符存取
+![alt text](image-56.png)
+
+### 3.1.8 string插入和删除
+
+![alt text](image-55.png)
+总结:插入和删除的起始下标都是从0开始
+
+### 3.1.8 string子串
+![alt text](image-57.png)
+
+## 3.2 vector容器
+
+### 3.2.1 vector基本概念
+
+![alt text](image-58.png)
+
+![alt text](image-59.png)
+- vector容器的迭代器是支持随机访问的迭代器
+
+### 3.2.2 vector构造函数
+![alt text](image-60.png)
+
+### 3.2.3 vector赋值操作
+![alt text](image-61.png)
+
+### 3.2.4 vector容量大小
+![alt text](image-62.png)
+
+### 3.2.5 vector插入和删除
+![alt text](image-63.png)
+
+![alt text](image-64.png)
+
+### 3.2.6 vector数据存取
+![alt text](image-65.png)
+
+### 3.2.7 vector互换容器
+![alt text](image-66.png)
+
+```
+//vector互换容器示例，收缩内存
+void test05()
+{
+	vector<int>v1;
+
+	for (int i = 0; i < 10000; i++)
+	{
+		v1.push_back(i);
+	}
+	
+	cout << "v1的容量为：" << v1.capacity() << endl;
+	cout << "v1的大小为：" << v1.size() << endl;
+
+	v1.resize(3);
+	cout << "v1的容量为：" << v1.capacity() << endl;
+	cout << "v1的大小为：" << v1.size() << endl;
+
+	vector<int>(v1).swap(v1);
+	cout << "v1的容量为：" << v1.capacity() << endl;
+	cout << "v1的大小为：" << v1.size() << endl;
+}
+```
+
+### 3.2.8 vector预留空间
+![alt text](image-67.png)
+
+## 3.3 deque容器
+
+### 3.3.1 deque容器基本概念
+![alt text](image-68.png)
+
+![alt text](image-69.png)
+
+![alt text](image-71.png)
+
+### 3.3.2 deque构造函数
+![alt text](image-70.png)
+
+### 3.3.3 deque赋值操作
+![alt text](image-72.png)
+
+### 3.3.4 deque大小操作
+![alt text](image-73.png)
+
+### 3.3.5 deque插入和删除
+![alt text](image-74.png)
+总结:
+
+- 插入和删除提供的位置是迭代器!
+- 尾插 - pushback
+- 尾删 - pop_back
+- 头插 - push_front
+- 头删 - pop_front
+
+### 3.3.6 deque数据存取
+![alt text](image-75.png)
+总结:
+- 除了用迭代器获取deque容器中元素，[]和at也可以
+- front返回容器第一个元素
+- back返回容器最后一个元素
+
+### 3.3.7 deque排序
+![alt text](image-76.png)
+
+## 3.4 stack容器
+### 3.4.1 stack基本概念
+![alt text](image-77.png)
+
+### 3.4.2 stack常用接口
+![alt text](image-78.png)
+
+## 3.5 queue容器
+### 3.5.1 queue基本概念
+![alt text](image-79.png)
+
+![alt text](image-80.png)
+
+### 3.5.2 queue常用接口
+![alt text](image-81.png)
+
+## 3.6 list容器
+
+### 3.6.1 list基本概念
+![alt text](image-82.png)
+
+![alt text](image-83.png)
+
+![alt text](image-84.png)
+
+![alt text](image-85.png)
+
+### 3.6.2 list构造函数
+![alt text](image-86.png)
+
+### 3.6.3 list赋值和交换
+![alt text](image-87.png)
+
+### 3.6.4 list大小操作
+![alt text](image-88.png)
+
+### 3.6.5 list插入和删除
+![alt text](image-89.png)
+
+![alt text](image-90.png)
+
+### 3.6.6 list数据存取
+![alt text](image-91.png)
+
+![alt text](image-92.png)
+
+### 3.6.6 list反转和排序
+![alt text](image-93.png)
+
+## 3.7 set/multiset容器
+
+### 3.7.1 set基本概念
+![alt text](image-94.png)
+
+### 3.7.2 set构造和赋值
+![alt text](image-95.png)
+
