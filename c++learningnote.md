@@ -2663,3 +2663,423 @@ void test05()
 ![alt text](image-99.png)
 ![alt text](image-100.png)
 ![alt text](image-101.png)
+
+# STL函数对象
+
+## 4.1 函数对象
+![alt text](image-102.png)
+
+## 4.2 谓词
+![alt text](image-103.png)
+
+## 4.3 内建函数对象
+![alt text](image-104.png)
+![alt text](image-105.png)
+![alt text](image-106.png)
+![alt text](image-107.png)
+
+# 5 STL常用算法
+![alt text](image-108.png)
+## 5.1 常用遍历算法
+![alt text](image-109.png)
+![alt text](image-110.png)
+![alt text](image-111.png)
+![alt text](image-112.png)
+## 5.2 常用的查找算法
+![alt text](image-113.png)
+![alt text](image-114.png)
+![alt text](image-115.png)
+
+## 5.3 常用的排序算法
+![alt text](image-116.png)
+![alt text](image-117.png)
+![alt text](image-118.png)
+![alt text](image-119.png)
+
+## 5.4 常用的拷贝和替换算法
+![alt text](image-120.png)
+![alt text](image-121.png)
+![alt text](image-122.png)
+![alt text](image-123.png)
+![alt text](image-124.png)
+
+## 5.5 常用的算数生成法
+![alt text](image-125.png)
+![alt text](image-126.png)
+![alt text](image-127.png)
+
+## 5.6 常用集合
+![alt text](image-128.png)
+![alt text](image-129.png)
+![alt text](image-130.png)
+![alt text](image-131.png)
+
+# 类型转换
+
+## 1.显示类型转换和隐式类型转换
+- 当等号两边的类型不同的时候、形参与实参类型不匹配的时候、返回值类型与接收返回值类型不一致时，就需要发生类型转化。
+- 而类型转换又分为隐式类型转换和显示类型转换。
+
+```
+int main() {
+	//隐式类型转换
+	int Ival = 1;
+	double Dval = Ival;
+	cout << "Dval：" << Dval << endl;
+
+	//显式类型转换
+	int* p = &Ival;
+	int pi = p; //error
+	int pi = (int)p;
+	cout << "pi：" << pi << endl;
+	system("pause");
+	return(0);
+}
+```
+- 隐式类型转换是编译器在编译阶段自动进行，能转就转，不能转就编译失败。而显示类型转换就要我们自己处理。
+
+## 2.C++的四种强制类型转换
+- 上面的两种类型转换是C语言风格的，存在一些缺点。隐式类型转换会造成精度的丢失。而显示类型转换则会导致转换不清晰（不知道谁转化过来）。所以C++提供了规范的四种类型转换。
+
+### 2.1 static_cast
+- 相似转化
+- 如果想要进行相似类型的转换，编译器隐式执行的任何类型转换都可用。但是如果是**两个不相关的类型**就不能转换。
+```
+int main() {
+	int i = 0;
+	double d = static_cast<double>(i);
+	int* p = &i;
+	int pi = static_cast<int>(p);//error
+	system("pause");
+	return(0);
+}
+```
+### 2.2 reinterpret_cast
+- 不同类型转化
+- 上面我们用指针类型转化成整型出现错误，而这种不同类型的转换要用``reinterpret_cast``。
+
+```
+int main() {
+	int i = 0;
+	double d = static_cast<double>(i);
+	int* p = &i;
+	int pi = static_cast<int>(p);//error
+
+	int pi = reinterpret_cast<int>(p);
+	system("pause");
+	return(0);
+}
+```
+
+### 2.3 const_cast
+- 去除const属性
+- 使用``const_cast``的主要目的是为了去除一个const变量的const，方便赋值。
+
+```
+int main() {
+	//volatile const int a = 2;
+	const int a = 2;
+	int* p = const_cast<int*>(&a);
+	*p = 3;
+	cout << a << endl;  //2
+	cout << *p << endl; //3
+	system("pause");
+	return(0);
+}
+```
+这里的结果需要注意一下：
+
+![alt text](image-132.png)
+
+```
+	cout << a << endl;  //2
+	cout << *p << endl; //3
+```
+这里是因为编译器把这个变量放到了寄存器中，我们修改的是内存中的数据，不影响寄存器，我们可以加上volatile关键字（每次都去内存中取）来看看：
+![alt text](image-133.png)
+
+### 2.4 dynamic_cast
+```
+向上转型： 子类的指针（或引用）→ 父类的指针（或引用）。
+向下转型： 父类的指针（或引用）→ 子类的指针（或引用）。
+```
+- 其中，向上转型就是所说的切割/切片，是语法天然支持的，不需要进行转换，而向下转型是语法不支持的，需要进行强制类型转换。
+
+**向下转换**
+- dynamic_cast用于将一个父类对象的指针/引用转换为子类对象的指针或引用(动态转换)
+- C++继承中讲过，子类对象赋值给父类 对象/指针/引用，这里有个形象的说法叫切片或者切割，寓意把派生类中父类那部分切来赋值过去。
+- 但是如果我们直接把父类对象传递给子类，会不安全，因为父类转给子类会多开一份空间，可能会越界访问。
+  
+```
+class A {
+public:
+	virtual void f() {};
+	int _a = 0;
+};
+
+class B :public::A {
+public:
+	int _b = 0;
+};
+
+void fun(A* pa) {
+	B* pb = (B*)pa;
+
+	pb->_a++;
+	pb->_b++;
+}
+
+int main() {
+	A a;
+	B b;
+	fun(&a);
+	fun(&b);
+	system("pause");
+	return(0);
+}
+```
+![alt text](image-134.png)
+- 而加上dynamic_cast后如果转化失败就会返回空指针，让我们检查：
+
+![alt text](image-135.png)
+![alt text](image-136.png)
+
+## 3.总结
+``4种类型转换的应用场景``
+
+- static_cast用于相近类型的类型之间的转换，编译器隐式执行的任何类型转换都可用static_cast。
+- reinterpret_cast用于两个不相关类型之间的转换。
+- const_cast用于删除变量的const属性，方便赋值。
+- dynamic_cast用于安全的将父类的指针（或引用）转换成子类的指针（或引用）。
+
+# 数据结构思维导图
+![alt text](image-155.png)
+
+# 哈希表
+hash又翻译为散列
+## 1. 基本思想
+![alt text](image-140.png)
+![alt text](image-139.png)
+![alt text](image-142.png)
+## 2. 哈希函数构造方法
+![alt text](image-143.png)
+### 2.1. 直接定址法
+![alt text](image-145.png)
+### 2.2. 除留余数法
+![alt text](image-144.png)
+
+## 3. 处理哈希冲突的方法
+![alt text](image-146.png)
+
+### 3.1. 开放定址法
+![alt text](image-147.png)
+
+例如：
+![alt text](image-148.png)
+
+### 3.2. 链地址法（拉链法）
+![alt text](image-149.png)
+
+- 链地址法建立哈希表步骤
+![alt text](image-150.png)
+- 链地址法的优点
+![alt text](image-151.png)
+
+## 4. 哈希表的查找
+![alt text](image-152.png)
+**平均查找长度**
+![alt text](image-154.png)
+![alt text](image-153.png)
+
+- 哈希表具有很好的平均性能
+- 链地址法优于开放地址法（1是查找效率，2是动态的表的长度可以变化）
+- 除留余数法做哈希函数优于其他类型函数（除数 p 一般是小于等于哈希表大小 m 的最大质数）
+
+# 常见的树
+
+## 1. 平衡二叉树（AVL树）
+
+- 一颗平衡二叉树或者是空树，或者是具有下列性质的二叉排序树。
+
+1. 左子树与右子树的高度差的绝对值小于等于1
+2. 左子树和右子树也是平衡二叉排序树
+
+![alt text](image-156.png)
+
+![alt text](image-137.png)
+- 插入新节点失衡时
+![alt text](image-138.png)
+
+## 2. 完全二叉树
+![alt text](image-187.png)
+
+## 3. 红黑树
+![alt text](image-157.png)
+![alt text](image-158.png)
+
+- 插入节点默认为红色（因为如果插入为黑色，必然违反黑路同的规则，调整更加频繁），默认为红色只可能违反**跟叶黑**或者**不红红**。
+
+
+插入节点后如果红黑树性质被破坏，需要分三种情况调整：
+-
+- 1.插入结点是根节点     ----> **直接变黑**
+- 2.插入结点的叔叔是红色 ----> **叔父爷变色，爷爷变插入结点(爷爷接着判断是否符合性质)**
+- 3.插入结点的叔叔是黑色 ----> **(LL,RR,LR,RL)旋转，然后变色**
+
+1. 例1:插入结点是根节点
+![alt text](image-159.png)
+![alt text](image-160.png)
+
+2. 例二：插入结点的叔叔是红色
+![alt text](image-161.png)
+![alt text](image-162.png)
+![alt text](image-163.png)
+
+3. 例三：入结点的叔叔是黑色
+
+**LL型**
+![alt text](image-164.png)
+![alt text](image-165.png)
+![alt text](image-166.png)
+
+**RR型**
+![alt text](image-167.png)
+![alt text](image-168.png)
+![alt text](image-169.png)
+
+**LR型**
+![alt text](image-170.png)
+![alt text](image-171.png)
+![alt text](image-172.png)
+**RL型**
+![alt text](image-173.png)
+![alt text](image-174.png)
+![alt text](image-175.png)
+
+## 4. 哈夫曼树
+![alt text](image-211.png)
+![alt text](image-212.png)
+![alt text](image-213.png)
+![alt text](image-214.png)
+![alt text](image-215.png)
+
+**哈夫曼编码**
+![alt text](image-216.png)
+![alt text](image-217.png)
+
+- 哈夫曼编码的例子
+![alt text](image-218.png)
+![alt text](image-219.png)
+
+
+
+# 图
+## 1. 图的定义
+![alt text](image-188.png)
+![alt text](image-189.png)
+![alt text](image-190.png)
+
+## 2. 图的存储结构
+**重点**：
+- 邻接矩阵
+- 邻接表
+![alt text](image-191.png)
+### 2.1 邻接矩阵
+- 无向图
+![alt text](image-192.png)
+![alt text](image-193.png)
+- 有向图
+![alt text](image-194.png)
+- 网
+![alt text](image-195.png)
+- 优点
+![alt text](image-196.png)
+- 缺点
+![alt text](image-197.png)
+### 2.2 邻接表
+![alt text](image-198.png)
+![alt text](image-199.png)
+- 无向图
+![alt text](image-200.png)
+- 有向图
+![alt text](image-201.png)
+
+![alt text](image-202.png)
+
+## 3. 图的遍历
+- 深度优先搜索(Depth_First Search-DFS）
+- 广度优先搜索（Breadth_Frist Search--BFS)
+### 3.1 深度优先搜索dfs
+![alt text](image-203.png)
+![alt text](image-204.png)
+### 3.2 广度优先搜索bfs
+![alt text](image-205.png)
+![alt text](image-206.png)
+
+## 4. 图的应用
+### 4.1 最小生成树
+![alt text](image-207.png)
+![alt text](image-208.png)
+
+**构造最小生成树**
+![alt text](image-209.png)
+![alt text](image-210.png)
+1. prim普里姆算法
+![alt text](image-220.png)
+
+2. 克鲁斯卡尔算法
+![alt text](image-221.png)
+
+![alt text](image-222.png)
+
+### 4.2 最短路径
+![alt text](image-223.png)
+1. 迪杰斯特拉Dijkstra
+![alt text](image-224.png)
+![alt text](image-225.png)
+![alt text](image-226.png)
+
+2. 弗洛伊德Floyd
+![alt text](image-227.png)
+![alt text](image-228.png)
+
+### 4.3 拓扑排序
+![alt text](image-229.png)
+![alt text](image-230.png)
+
+
+
+
+# 操作系统
+
+## 五.进程管理
+![alt text](image-176.png)
+
+# 串的模式匹配算法
+- 算法目的：确定主串中所含子串（模式串）第一次出现的位置（定位）
+- 算法应用：搜索引擎、拼写检查、语言翻译、数据压缩
+- 算法种类：
+1. BF算法(Brute-Force，又称古典的、经典的、朴素的、穷举的)
+2. KMP算法(特点：速度快)
+
+## 1.BF算法
+![alt text](image-177.png)
+![alt text](image-178.png)
+![alt text](image-179.png)
+
+## 2. KMP算法
+- KMP算法是D.E.Knuth、J.H.Morris和V.R.Pratt共同提出的，简称KMP算法。
+
+1. KMP算法思想：
+- i不必回溯；j位置事先根据前缀计算next[j]，然后按照值回溯
+![alt text](image-180.png)
+![alt text](image-181.png)
+![alt text](image-182.png)
+![alt text](image-183.png)
+![alt text](image-184.png)
+
+- next[j]的优化：
+可能出现如下情况
+![alt text](image-185.png)
+根据next值再优化nextval的值
+![alt text](image-186.png)
