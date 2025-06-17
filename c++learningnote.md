@@ -3083,3 +3083,5 @@ hash又翻译为散列
 ![alt text](image-185.png)
 根据next值再优化nextval的值
 ![alt text](image-186.png)
+
+其他的
